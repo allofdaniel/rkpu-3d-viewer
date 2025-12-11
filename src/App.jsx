@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
-// Cesium Ion access token (free tier)
-Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI0YjE3NjE0OC1iMGE3LTRlNjItYjVmMi1lNzU5MmQwOWM2NmYiLCJpZCI6MjU5LCJpYXQiOjE2OTc2MTc2MjJ9.7k_TlN_c7p6g9k3U0L1u4k1j5Z8qQ2x9Y3w4v5h6i7o';
+// Use default Cesium terrain without Ion token
+window.CESIUM_BASE_URL = '/cesium/';
 
 const COLORS = {
   SID: Cesium.Color.fromCssColorString('#00C853'),
@@ -87,7 +87,7 @@ function App() {
     if (!cesiumContainer.current || viewerRef.current) return;
 
     const viewer = new Cesium.Viewer(cesiumContainer.current, {
-      terrain: Cesium.Terrain.fromWorldTerrain(),
+      terrainProvider: new Cesium.EllipsoidTerrainProvider(),
       animation: false,
       timeline: false,
       baseLayerPicker: false,
@@ -98,15 +98,16 @@ function App() {
       fullscreenButton: false,
       selectionIndicator: true,
       infoBox: true,
+      imageryProvider: new Cesium.OpenStreetMapImageryProvider({
+        url: 'https://tile.openstreetmap.org/'
+      }),
     });
 
     viewer.scene.globe.enableLighting = false;
-    viewer.scene.fog.enabled = true;
-    viewer.scene.fog.density = 0.0002;
 
     // Set initial camera position to Ulsan Airport
     viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(129.3518, 35.5934, 30000),
+      destination: Cesium.Cartesian3.fromDegrees(129.3518, 35.5934, 25000),
       orientation: {
         heading: Cesium.Math.toRadians(0),
         pitch: Cesium.Math.toRadians(-45),
@@ -164,7 +165,6 @@ function App() {
             color: COLORS.waypoint,
             outlineColor: Cesium.Color.BLACK,
             outlineWidth: 1,
-            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
           },
           label: {
             text: name,
@@ -175,7 +175,6 @@ function App() {
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
             pixelOffset: new Cesium.Cartesian2(0, -12),
-            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 50000),
           },
           description: `
@@ -204,12 +203,11 @@ function App() {
           position: Cesium.Cartesian3.fromDegrees(obs.lon, obs.lat, obs.elevation / 2),
           cylinder: {
             length: obs.elevation,
-            topRadius: 15,
-            bottomRadius: 25,
+            topRadius: 20,
+            bottomRadius: 30,
             material: color.withAlpha(0.8),
             outline: true,
             outlineColor: color,
-            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
           },
           label: {
             text: `#${obs.id}`,
@@ -220,7 +218,6 @@ function App() {
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
             pixelOffset: new Cesium.Cartesian2(0, -10),
-            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000),
           },
           description: `
@@ -252,7 +249,6 @@ function App() {
             outlineColor: Cesium.Color.fromCssColorString('#E91E63'),
             extrudedHeight: as.top_alt || 3000,
             height: as.base_alt || 0,
-            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
           },
           description: `
             <h3>${as.name || 'Airspace'}</h3>
@@ -282,12 +278,11 @@ function App() {
             name: proc.name,
             polyline: {
               positions: positions,
-              width: 3,
+              width: 4,
               material: new Cesium.PolylineGlowMaterialProperty({
-                glowPower: 0.2,
+                glowPower: 0.3,
                 color: color,
               }),
-              clampToGround: false,
             },
             description: `
               <h3>${proc.name}</h3>
@@ -312,9 +307,8 @@ function App() {
               name: `${proc.name} - Leg ${leg.seq || idx + 1}`,
               polyline: {
                 positions: positions,
-                width: 2,
+                width: 3,
                 material: color,
-                clampToGround: false,
               },
               description: `
                 <h3>${proc.name} - Leg ${leg.seq || idx + 1}</h3>
@@ -342,7 +336,7 @@ function App() {
           runwayStart[0], runwayStart[1],
           runwayEnd[0], runwayEnd[1],
         ]),
-        width: 20,
+        width: 15,
         material: COLORS.runway,
         clampToGround: true,
       },
