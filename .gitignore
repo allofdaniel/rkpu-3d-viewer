@@ -32,3 +32,5 @@ yarn-error.log*
 # Cache
 .cache
 .vercel
+
+.vercel
